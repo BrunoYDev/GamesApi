@@ -6,9 +6,10 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 app.get("/games", (req, res) => {
-  let games = db.all("SELECT * FROM games", (err, games) => {
+  db.all("SELECT * FROM games", (err, games) => {
     if (err) {
-      console.error(err.message);
+      res.status(500).json({ message: "Error fetching games" });
+      return;
     }
     res.status(200).json(games);
   });
@@ -18,11 +19,12 @@ app.get("/games/:id", (req, res) => {
   let id = parseInt(req.params.id);
   if (isNaN(id)) {
     res.status(400).json({ message: `${req.params.id} is not a valid ID` });
+    return;
   }
 
-  db.get(`SELECT * FROM games WHERE id == ?`, [id], (err, game) => {
+  db.get("SELECT * FROM games WHERE id = ?", [id], (err, game) => {
     if (err) {
-      console.error(err.message);
+      res.status(500).json({ message: "Error fetching game" });
       return;
     }
     if (!game) {
@@ -46,9 +48,9 @@ app.post("/games", (req, res) => {
     return;
   }
 
-  db.get("SELECT * FROM games WHERE title == ?", [title], (err, game) => {
+  db.get("SELECT * FROM games WHERE title = ?", [title], (err, game) => {
     if (err) {
-      console.error(err.message);
+      res.status(500).json({ message: "Error checking game existence" });
       return;
     }
 
@@ -56,11 +58,12 @@ app.post("/games", (req, res) => {
       res.status(409).json({ message: "This game is already registered" });
     } else {
       db.run(
-        "INSERT INTO games(title, year, price) VALUES(?,?,?)",
+        "INSERT INTO games(title, year, price) VALUES(?, ?, ?)",
         [title, year, price],
         (err) => {
           if (err) {
-            console.error(err.message);
+            res.status(500).json({ message: "Error creating game" });
+            return;
           }
           res.status(201).json({ message: "Game Created" });
         }
@@ -70,7 +73,7 @@ app.post("/games", (req, res) => {
 });
 
 app.patch("/games/:id", (req, res) => {
-  let id = req.params.id;
+  let id = parseInt(req.params.id);
   let { title, year, price } = req.body;
 
   if (!title && !year && !price) {
@@ -79,7 +82,7 @@ app.patch("/games/:id", (req, res) => {
   }
 
   let updates = []; // Fields to be updated
-  let values = []; // ID for WHERE statement
+  let values = []; // Values to be changed
 
   if (title) {
     updates.push("title = ?");
@@ -98,17 +101,39 @@ app.patch("/games/:id", (req, res) => {
 
   let sql = `UPDATE games SET ${updates.join(", ")} WHERE id = ?`;
 
-  db.run(sql, values, (err) => {
-    if(err){
-        console.error(err.message);
+  db.run(sql, values, function(err) {
+    if (err) {
+      res.status(500).json({ message: "Error updating game" });
+      return;
+    }
+
+    if (this.changes === 0) {
+      res.status(404).json({ message: "Game not found" });
+    } else {
+      res.status(200).json({ message: "Game updated successfully" });
     }
   });
+});
 
-  if (this.changes === 0) {
-    res.status(404).json({ message: "Game not found" });
-  } else {
-    res.status(200).json({ message: "Game updated successfully" });
+app.delete("/games/:id", (req, res) => {
+  let id = parseInt(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ message: `${req.params.id} is not a valid ID` });
+    return;
   }
+
+  db.run("DELETE FROM games WHERE id = ?", [id], function(err) {
+    if (err) {
+      res.status(500).json({ message: "Error deleting game" });
+      return;
+    }
+
+    if (this.changes === 0) {
+      res.status(404).json({ message: "Game not found" });
+    } else {
+      res.status(200).json({ message: "Game deleted successfully" });
+    }
+  });
 });
 
 app.listen(3000, () => {
