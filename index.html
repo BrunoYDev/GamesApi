@@ -7,12 +7,50 @@
 </head>
 
 <body>
-    
+    <h1>Games Store</h1>
+    <hr>
+    <h2>Game List</h2>
+    <ul id="games"></ul>
+    <hr>
+    <input type="text" name="title" id="title" placeholder="Game Title">
+    <input type="number" name="year" id="year" placeholder="Game Release Year">
+    <input type="number" name="price" id="price" placeholder="Game Price $">
+    <button type="button" onclick="createNewGame()">Create new Game</button>
 </body>
 <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
 <script>
+
+    const createNewGame = () => {
+        let title = document.getElementById('title');
+        let year = document.getElementById('year');
+        let price = document.getElementById('price');
+
+        var game = {
+            title: title.value,
+            year: year.value,
+            price: price.value
+        }
+
+        axios.post("http://localhost:3000/games", game).then(res => {
+            if(res.status == 201){
+              alert("Game created");
+              location.reload();
+            }
+        }).catch(err => {
+            console.error(err);
+        })
+    }
+
     axios.get('http://localhost:3000/games').then(res => {
-        console.log(res)
+        let games = res.data;
+        let list = document.getElementById("games");
+
+        games.forEach(game => {
+            let item = document.createElement('li');
+            item.innerHTML = `${game.title} - Year: ${game.year} - Price: $${game.price}`;
+            list.appendChild(item);
+        });
+
     }).catch(err => {
         console.error(err);
     });
