@@ -7,12 +7,34 @@ const jwt = require('jsonwebtoken');
 
 const jwtSecretKey = process.env.SECRET_KEY;
 
+const auth = (req,res,next) => {
+  const authToken = req.headers['authorization'];
+  if(!authToken){
+    res.status(401).json({message: "Invalid Token!"});
+    return;
+  }
+
+  const bearer = authToken.split(' ');
+  const token = bearer[1];
+
+  jwt.verify(token, jwtSecretKey,(err,data) => {
+    if(err){
+      res.status(401).json({message: "Unhatorized"});
+      return;
+    }
+    req.token = token;
+    req.loggedUser = {id: data.id, email: data.email};
+    next();
+  })
+
+}
+
 app.use(cors());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 //games routes
-app.get("/games", (req, res) => {
+app.get("/games", auth, (req, res) => {
   db.all("SELECT * FROM games", (err, games) => {
     if (err) {
       res.status(500).json({ message: "Error fetching games" });
@@ -22,7 +44,7 @@ app.get("/games", (req, res) => {
   });
 });
 
-app.get("/games/:id", (req, res) => {
+app.get("/games/:id", auth, (req, res) => {
   let id = parseInt(req.params.id);
   if (isNaN(id)) {
     res.status(400).json({ message: `${req.params.id} is not a valid ID` });
@@ -42,7 +64,7 @@ app.get("/games/:id", (req, res) => {
   });
 });
 
-app.post("/games", (req, res) => {
+app.post("/games", auth, (req, res) => {
   let { title, year, price } = req.body;
   if (
     isNaN(year) ||
@@ -79,7 +101,7 @@ app.post("/games", (req, res) => {
   });
 });
 
-app.patch("/games/:id", (req, res) => {
+app.patch("/games/:id", auth, (req, res) => {
   let id = parseInt(req.params.id);
   let { title, year, price } = req.body;
 
@@ -122,7 +144,7 @@ app.patch("/games/:id", (req, res) => {
   });
 });
 
-app.delete("/games/:id", (req, res) => {
+app.delete("/games/:id", auth, (req, res) => {
   let id = parseInt(req.params.id);
   if (isNaN(id)) {
     res.status(400).json({ message: `${req.params.id} is not a valid ID` });
@@ -184,7 +206,7 @@ app.post("/users", (req, res) => {
   });
 });
 
-app.get("/users", (req, res) => {
+app.get("/users", auth, (req, res) => {
   db.all("SELECT id, name, email FROM users;", (err, users) => {
     if (err) {
       res.status(500).json({ message: "Error fetching users" });
