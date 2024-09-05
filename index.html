@@ -12,10 +12,19 @@
     <h2>Game List</h2>
     <ul id="games"></ul>
     <hr>
+    <h2>Create new Game</h2>
     <input type="text" name="title" id="title" placeholder="Game Title">
     <input type="number" name="year" id="year" placeholder="Game Release Year">
     <input type="number" name="price" id="price" placeholder="Game Price $">
     <button type="button" onclick="createNewGame()">Create new Game</button>
+    <hr>
+    <h2>Edit Game</h2>
+    <input type="text" name="idEdit" id="idEdit" placeholder="ID" readonly style="display: none;">
+    <input type="text" name="titleEdit" id="titleEdit" placeholder="Game Title">
+    <input type="number" name="yearEdit" id="yearEdit" placeholder="Game Release Year">
+    <input type="number" name="priceEdit" id="priceEdit" placeholder="Game Price $">
+    <button type="button" onclick="updateGame()">Update Game</button>
+    <hr>
 </body>
 <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
 <script>
@@ -29,6 +38,41 @@
             location.reload();
             } 
         }).catch(err => console.log(err));
+    }
+
+    const loadForm = (item) => {
+        let id = item.getAttribute("data-id");
+        let title = item.getAttribute("data-title");
+        let year = item.getAttribute("data-year");
+        let price = item.getAttribute("data-price");
+
+        document.getElementById("idEdit").value = id;
+        document.getElementById("titleEdit").value = title;
+        document.getElementById("yearEdit").value = year;
+        document.getElementById("priceEdit").value = price;
+
+    }
+
+    const updateGame = () => {
+        let id = document.getElementById('idEdit').value;
+        let titleInput = document.getElementById('titleEdit');
+        let yearInput = document.getElementById('yearEdit');
+        let priceInput = document.getElementById('priceEdit');
+
+        var game = {
+            title: titleInput.value,
+            year: yearInput.value,
+            price: priceInput.value
+        }
+
+        axios.patch(`http://localhost:3000/games/${id}`, game).then(res => {
+            if(res.status == 200){
+              alert("Game Updated");
+              location.reload();
+            }
+        }).catch(err => {
+            console.error(err);
+        })
     }
 
     const createNewGame = () => {
@@ -70,7 +114,12 @@
             deleteBtn.innerHTML = "Delete";
             deleteBtn.addEventListener("click", () => deleteGame(item));
 
+            let editBtn = document.createElement("button");
+            editBtn.innerHTML = "Edit";
+            editBtn.addEventListener('click', () => loadForm(item));
+
             item.appendChild(deleteBtn);
+            item.appendChild(editBtn);
             list.appendChild(item);
         });
 
