@@ -20,6 +20,17 @@
 <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
 <script>
 
+
+    const deleteGame = (item) => {
+        let id = item.getAttribute("data-id");
+        axios.delete(`http://localhost:3000/games/${id}`).then((res) => {
+            if(res.status == 204){
+            alert("Game Deleted!");
+            location.reload();
+            } 
+        }).catch(err => console.log(err));
+    }
+
     const createNewGame = () => {
         let title = document.getElementById('title');
         let year = document.getElementById('year');
@@ -47,7 +58,19 @@
 
         games.forEach(game => {
             let item = document.createElement('li');
+
+            item.setAttribute("data-id", game.id);
+            item.setAttribute("data-title", game.title);
+            item.setAttribute("data-year", game.year);
+            item.setAttribute("data-price", game.price);
+
             item.innerHTML = `${game.title} - Year: ${game.year} - Price: $${game.price}`;
+
+            let deleteBtn = document.createElement("button");
+            deleteBtn.innerHTML = "Delete";
+            deleteBtn.addEventListener("click", () => deleteGame(item));
+
+            item.appendChild(deleteBtn);
             list.appendChild(item);
         });
 
