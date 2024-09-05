@@ -133,7 +133,7 @@ app.delete("/games/:id", (req, res) => {
     if (this.changes === 0) {
       res.status(404).json({ message: "Game not found" });
     } else {
-      res.status(200).json({ message: "Game deleted successfully" });
+      res.status(204).json({ message: "Game deleted successfully" });
     }
   });
 });
