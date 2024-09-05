@@ -15,5 +15,13 @@ db.run(
     };
   }
 );
+db.run(
+  "CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, name VARCHAR(50), email VARCHAR(80), password TEXT);",
+  (err) => {
+    if(err){
+        console.error(err.message);
+    };
+  }
+);
 
 module.exports = db;

@@ -2,11 +2,16 @@ const express = require("express");
 const app = express();
 const db = require("./database/database");
 const cors = require('cors');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
+const jwtSecretKey = process.env.SECRET_KEY;
 
 app.use(cors());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
+//games routes
 app.get("/games", (req, res) => {
   db.all("SELECT * FROM games", (err, games) => {
     if (err) {
@@ -136,6 +141,94 @@ app.delete("/games/:id", (req, res) => {
       res.status(204).json({ message: "Game deleted successfully" });
     }
   });
+});
+
+//user routes
+
+app.post("/users", (req, res) => {
+  let { name, email, password } = req.body;
+
+  const salt = bcrypt.genSaltSync(10);
+  const hash = bcrypt.hashSync(password,salt);
+
+  if (
+    name === undefined ||
+    email === undefined ||
+    password === undefined
+  ) {
+    res.status(400).json({ message: "Fill the body request correctly" });
+    return;
+  }
+
+  db.get("SELECT * FROM users WHERE email = ?", [email], (err, user) => {
+    if (err) {
+      res.status(500).json({ message: "Error checking user existence" });
+      return;
+    }
+
+    if (user) {
+      res.status(409).json({ message: "This email is already registered" });
+    } else {
+      db.run(
+        "INSERT INTO users(name, email, password) VALUES(?, ?, ?)",
+        [name, email, hash],
+        (err) => {
+          if (err) {
+            res.status(500).json({ message: "Error creating user" });
+            return;
+          }
+          res.status(201).json({ message: "User Created" });
+        }
+      );
+    }
+  });
+});
+
+app.get("/users", (req, res) => {
+  db.all("SELECT id, name, email FROM users;", (err, users) => {
+    if (err) {
+      res.status(500).json({ message: "Error fetching users" });
+      return;
+    }
+    res.status(200).json(users);
+  });
+});
+
+app.post('/auth', (req,res) => {
+  let {email, password} = req.body;
+
+  if(email === undefined || password === undefined){
+    res.status(400).json({message: "Invalid email or password"});
+  }
+
+  db.get("SELECT * FROM users WHERE email = ?;",[email], (err, user) => {
+    if (err) {
+      res.status(500).json({ message: "Error checking user existence" });
+      return;
+    };
+
+    if(!user || user == undefined){
+      res.status(404).json({message: "User doesn't exists"});
+      return;
+    }
+
+    let compare = bcrypt.compareSync(password, user.password);
+
+    if(user && compare){
+
+      jwt.sign({id: user.id,email: user.email}, jwtSecretKey, {expiresIn: '72h'},(err,token) => {
+        if(err){
+          res.status(400).json({message: "Internal Failure" + err.message});
+        }
+        res.status(200).json({token: token});
+      });
+
+    }else{
+      res.status(401).json({message: "Incorret email or Password"});
+    }
+
+  });
+
 });
 
 app.listen(3000, () => {
