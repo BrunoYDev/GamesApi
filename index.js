@@ -35,12 +35,31 @@ app.use(express.json());
 
 //games routes
 app.get("/games", auth, (req, res) => {
+
+  let HATEOAS = [
+    {
+      href: "http://localhost:3000/games/0",
+      method: "DELETE",
+      rel: "delete_game"
+    },
+    {
+      href: "http://localhost:3000/games/0",
+      method: "GET",
+      rel: "get_game"
+    },
+    {
+      href: "http://localhost:3000/games/0",
+      method: "PATCH",
+      rel: "update_game"
+    }
+  ]
+
   db.all("SELECT * FROM games", (err, games) => {
     if (err) {
       res.status(500).json({ message: "Error fetching games" });
       return;
     }
-    res.status(200).json(games);
+    res.status(200).json({games, _links: HATEOAS});
   });
 });
 
@@ -60,7 +79,26 @@ app.get("/games/:id", auth, (req, res) => {
       res.status(404).json({ message: "Game not found" });
       return;
     }
-    res.status(200).json(game);
+
+    let HATEOAS = [
+      {
+        href: `http://localhost:3000/games/${game.id}`,
+        method: "DELETE",
+        rel: "delete_game"
+      },
+      {
+        href: `http://localhost:3000/games/${game.id}`,
+        method: "GET",
+        rel: "get_game"
+      },
+      {
+        href: `http://localhost:3000/games/${game.id}`,
+        method: "PATCH",
+        rel: "update_game"
+      }
+    ]
+
+    res.status(200).json({game, _links: HATEOAS});
   });
 });
 
